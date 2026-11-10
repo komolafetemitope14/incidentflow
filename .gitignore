@@ -32,3 +32,6 @@ htmlcov/
 
 # Local incident data
 incidents.json
+
+# Local backups
+*.backup
