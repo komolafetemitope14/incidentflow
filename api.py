@@ -1,5 +1,8 @@
 from fastapi import FastAPI
 
+from main import load_incidents
+
+
 app = FastAPI(
     title="IncidentFlow API",
     description="Enterprise Incident Management REST API",
@@ -20,4 +23,15 @@ def home():
 def health_check():
     return {
         "status": "healthy",
+    }
+
+
+@app.get("/incidents")
+def get_incidents():
+    """Retrieve all saved incidents."""
+    incidents = load_incidents()
+
+    return {
+        "count": len(incidents),
+        "incidents": incidents,
     }

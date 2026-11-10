@@ -26,3 +26,31 @@ def test_health_check():
     assert response.json() == {
         "status": "healthy",
     }
+
+
+def test_get_incidents(tmp_path, monkeypatch):
+    import main
+
+    test_file = tmp_path / "incidents.json"
+
+    monkeypatch.setattr(main, "DATA_FILE", test_file)
+
+    incidents = [
+        {
+            "id": "INC-001",
+            "title": "Database failure",
+            "description": "Database unavailable",
+            "severity": "High",
+            "status": "Investigating",
+        }
+    ]
+
+    main.save_incidents(incidents)
+
+    response = client.get("/incidents")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "count": 1,
+        "incidents": incidents,
+    }
