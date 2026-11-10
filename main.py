@@ -5,10 +5,11 @@ from pathlib import Path
 DATA_FILE = Path(__file__).resolve().parent / "incidents.json"
 
 ALLOWED_SEVERITIES = ["Critical", "High", "Medium", "Low"]
+ALLOWED_STATUSES = ["Open", "Investigating", "Resolved"]
 
 
 def load_incidents():
-    """Load existing incidents from the JSON file."""
+    """Load incidents from the JSON file."""
 
     if not DATA_FILE.exists():
         return []
@@ -43,7 +44,7 @@ def save_incidents(incidents):
 
 
 def generate_incident_id(incidents):
-    """Generate the next available incident ID."""
+    """Generate a unique incident ID."""
 
     existing_numbers = []
 
@@ -117,6 +118,68 @@ def view_incidents(incidents):
         )
 
 
+def update_incident_status(incidents):
+    """Update the status of an existing incident."""
+
+    print("\n--- Update Incident Status ---")
+
+    if not incidents:
+        print("No incidents available to update.")
+        return
+
+    incident_id = input(
+        "Enter incident ID (e.g. INC-001): "
+    ).strip().upper()
+
+    incident = next(
+        (item for item in incidents if item["id"] == incident_id),
+        None
+    )
+
+    if incident is None:
+        print("Incident not found.")
+        return
+
+    print(f"\nIncident: {incident['title']}")
+    print(f"Current status: {incident['status']}")
+
+    print("\nAvailable statuses:")
+    for index, status in enumerate(ALLOWED_STATUSES, start=1):
+        print(f"{index}. {status}")
+
+    choice = input("\nSelect new status: ").strip()
+
+    if not choice.isdigit():
+        print("Invalid status selection.")
+        return
+
+    choice_number = int(choice)
+
+    if not 1 <= choice_number <= len(ALLOWED_STATUSES):
+        print("Invalid status selection.")
+        return
+
+    new_status = ALLOWED_STATUSES[choice_number - 1]
+    old_status = incident["status"]
+
+    if new_status == old_status:
+        print("Incident already has that status.")
+        return
+
+    incident["status"] = new_status
+
+    if not save_incidents(incidents):
+        incident["status"] = old_status
+        print("Status update was not saved.")
+        return
+
+    print(
+        f"\nIncident {incident_id} updated successfully!"
+    )
+    print(f"Previous status: {old_status}")
+    print(f"New status: {new_status}")
+
+
 def main():
     incidents = load_incidents()
 
@@ -128,7 +191,8 @@ def main():
 
         print("1. Create Incident")
         print("2. View Incidents")
-        print("3. Exit")
+        print("3. Update Incident Status")
+        print("4. Exit")
 
         choice = input("\nSelect an option: ").strip()
 
@@ -137,6 +201,8 @@ def main():
         elif choice == "2":
             view_incidents(incidents)
         elif choice == "3":
+            update_incident_status(incidents)
+        elif choice == "4":
             print("Goodbye!")
             break
         else:
