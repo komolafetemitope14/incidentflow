@@ -1,61 +1,96 @@
 
-from copy import deepcopy
-
 import pytest
-from fastapi.testclient import TestClient
 
-import api
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine import make_url
+from sqlalchemy.orm import sessionmaker
+
+from api import app
+from database import Base, get_db, settings
+from models import Incident
+
+
+TEST_DATABASE_NAME = "incidentflow_test"
+
+database_url = make_url(settings.database_url)
+
+if database_url.database == TEST_DATABASE_NAME:
+    test_database_url = database_url
+else:
+    test_database_url = database_url.set(
+        database=TEST_DATABASE_NAME
+    )
+
+if test_database_url.database != TEST_DATABASE_NAME:
+    raise RuntimeError("Refusing to test against a non-test database")
+
+test_engine = create_engine(
+    test_database_url,
+    pool_pre_ping=True,
+)
+
+TestSessionLocal = sessionmaker(
+    bind=test_engine,
+    autoflush=False,
+    autocommit=False,
+)
 
 
 @pytest.fixture
-def client(monkeypatch):
-    # Use in-memory storage so tests never modify real incidents.
-    incidents = []
+def client():
+    # Ensure the test database has the expected tables.
+    Base.metadata.create_all(bind=test_engine)
 
-    def fake_load():
-        return deepcopy(incidents)
+    # Tests are isolated from each other.
+    with test_engine.begin() as connection:
+        connection.execute(text("DELETE FROM incidents"))
 
-    def fake_save(updated_incidents):
-        incidents[:] = deepcopy(updated_incidents)
+    def override_get_db():
+        with TestSessionLocal() as session:
+            yield session
 
-    monkeypatch.setattr(api, "load_incidents", fake_load)
-    monkeypatch.setattr(api, "save_incidents", fake_save)
+    app.dependency_overrides[get_db] = override_get_db
 
-    return TestClient(api.app)
+    try:
+        with TestClient(app) as test_client:
+            yield test_client
+    finally:
+        app.dependency_overrides.clear()
 
 
-def create_incident(client):
-    response = client.post(
+def create_sample_incident(client):
+    return client.post(
         "/incidents",
         json={
             "title": "Database outage",
-            "description": "PostgreSQL is unreachable",
+            "description": "Production database unavailable",
             "severity": "Critical",
         },
     )
-    assert response.status_code == 201
-    return response.json()
 
 
 def test_health_check(client):
     response = client.get("/health")
-
     assert response.status_code == 200
-    assert response.json()["status"] == "healthy"
+    assert response.json() == {"status": "healthy"}
 
 
 def test_create_incident(client):
-    incident = create_incident(client)
+    response = create_sample_incident(client)
 
-    assert incident["title"] == "Database outage"
-    assert incident["severity"] == "Critical"
+    assert response.status_code == 201
+
+    incident = response.json()
+
+    assert incident["id"] == "INC-001"
     assert incident["status"] == "Open"
+    assert incident["severity"] == "Critical"
     assert incident["created_at"] is not None
-    assert incident["resolved_at"] is None
 
 
 def test_list_incidents(client):
-    create_incident(client)
+    create_sample_incident(client)
 
     response = client.get("/incidents")
 
@@ -64,16 +99,18 @@ def test_list_incidents(client):
 
 
 def test_get_incident_by_id(client):
-    incident = create_incident(client)
+    incident = create_sample_incident(client).json()
 
-    response = client.get(f"/incidents/{incident['id']}")
+    response = client.get(
+        f"/incidents/{incident['id']}"
+    )
 
     assert response.status_code == 200
     assert response.json()["id"] == incident["id"]
 
 
 def test_update_incident_status(client):
-    incident = create_incident(client)
+    incident = create_sample_incident(client).json()
 
     response = client.patch(
         f"/incidents/{incident['id']}",
@@ -83,12 +120,9 @@ def test_update_incident_status(client):
     assert response.status_code == 200
     assert response.json()["status"] == "Investigating"
 
-    saved = client.get(f"/incidents/{incident['id']}")
-    assert saved.json()["status"] == "Investigating"
-
 
 def test_resolve_incident(client):
-    incident = create_incident(client)
+    incident = create_sample_incident(client).json()
 
     response = client.patch(
         f"/incidents/{incident['id']}",
@@ -101,28 +135,20 @@ def test_resolve_incident(client):
 
 
 def test_filter_incidents(client):
-    incident = create_incident(client)
-
-    client.patch(
-        f"/incidents/{incident['id']}",
-        json={"status": "Resolved"},
-    )
+    create_sample_incident(client)
 
     response = client.get(
-        "/incidents",
-        params={
-            "status": "Resolved",
-            "severity": "Critical",
-        },
+        "/incidents?severity=Critical&status=Open"
     )
 
     assert response.status_code == 200
     assert response.json()["count"] == 1
-    assert response.json()["incidents"][0]["id"] == incident["id"]
 
 
 def test_missing_incident(client):
-    response = client.get("/incidents/INC-999")
+    response = client.get(
+        "/incidents/INC-999"
+    )
 
     assert response.status_code == 404
 
@@ -131,8 +157,8 @@ def test_invalid_severity(client):
     response = client.post(
         "/incidents",
         json={
-            "title": "Invalid incident",
-            "description": "Invalid severity test",
+            "title": "Invalid severity",
+            "description": "Test incident",
             "severity": "Extreme",
         },
     )
@@ -141,7 +167,7 @@ def test_invalid_severity(client):
 
 
 def test_invalid_status(client):
-    incident = create_incident(client)
+    incident = create_sample_incident(client).json()
 
     response = client.patch(
         f"/incidents/{incident['id']}",

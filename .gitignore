@@ -1,37 +1,65 @@
-# Python virtual environment
+
+# Python virtual environments
 .venv/
 venv/
+env/
 
-# Python cache
+# Python cache and compiled files
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
+
+# Testing and development caches
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
 
 # Environment variables and secrets
 .env
 .env.*
 !.env.example
 
-# Testing and tooling
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.coverage
-htmlcov/
+# Local incident data
+incidents.json
+incidents.backup.json
 
-# IDE files
+# Local backup files
+*.backup
+*.backup.*
+*.bak
+api.backup.py
+main.py.backup
+api.py.backup
+
+# Vim swap and temporary files
+*.swp
+*.swo
+*.swn
+*~
+
+# IDE configuration
 .vscode/
 .idea/
 
-# Operating system files
-.DS_Store
+# Logs
+*.log
 
-# Local databases
+# Local database files
 *.db
+*.sqlite
 *.sqlite3
 
-# Local incident data
-incidents.json
+# Python build files
+build/
+dist/
+*.egg-info/
 
-# Local backups
-*.backup
+# Operating system files
+.DS_Store
+Thumbs.db
