@@ -5,13 +5,17 @@ A Python-based incident management application for tracking operational incident
 
 IncidentFlow includes a command-line application and a FastAPI REST API. The REST API uses PostgreSQL for persistent incident storage, SQLAlchemy for database access, and Alembic for schema migrations.
 
+The application also supports local containerized deployment using Docker and Docker Compose.
+
 ## Project Status
 
 **Current API version:** 1.2.0
 
-**Automated tests:** 17 passing
+**Automated tests:** 17 passing (last documented test run)
 
 **Database:** PostgreSQL 18
+
+**Docker deployment:** Successfully tested locally
 
 ### Implemented Features
 
@@ -29,18 +33,26 @@ IncidentFlow includes a command-line application and a FastAPI REST API. The RES
 - Database connectivity health checks
 - Automated testing with pytest
 - Separate PostgreSQL test database
+- Dockerized FastAPI application
+- PostgreSQL container with persistent storage
+- Docker Compose service orchestration
+- Database health checks and startup dependencies
+- Automatic database migrations during container startup
+- Verified incident persistence across container restarts
 
 ## Technology Stack
 
 - Python
 - FastAPI
 - Pydantic
-- PostgreSQL
+- PostgreSQL 18
 - SQLAlchemy
 - Alembic
 - psycopg
 - pytest
 - Uvicorn
+- Docker
+- Docker Compose
 - Git and GitHub
 
 ## Architecture
@@ -74,12 +86,39 @@ The CLI and REST API currently use separate storage backends. Incidents created 
 
 Alembic manages database schema changes.
 
+### Docker Architecture
+
+The Docker Compose environment contains two services:
+
+**API service**
+
+- Runs the FastAPI application
+- Uses a Python 3.14 slim base image
+- Runs as a non-root user
+- Exposes the application on `127.0.0.1:8001`
+- Applies Alembic migrations during startup
+
+**Database service**
+
+- Runs PostgreSQL 18
+- Uses a persistent Docker volume
+- Includes a database readiness health check
+- Communicates with the API over the Docker Compose network
+- Does not publish its database port to the host
+
+The API waits for the PostgreSQL health check to succeed before starting.
+
 ## Project Structure
 
 ```text
 incidentflow/
+├── .dockerignore
 ├── .gitignore
 ├── README.md
+├── Dockerfile
+├── compose.yaml
+├── requirements.txt
+├── requirements-dev.txt
 ├── api.py
 ├── main.py
 ├── database.py
@@ -93,7 +132,7 @@ incidentflow/
 └── .github/
 ```
 
-Additional configuration and dependency files may be present depending on the development environment.
+Local configuration files, incident data, backups, and virtual environments are excluded from Git where appropriate.
 
 ## Incident Data Model
 
@@ -140,6 +179,13 @@ When an incident is marked `Resolved`, the API records its resolution timestamp.
 
 ## Getting Started
 
+There are two ways to run IncidentFlow:
+
+1. Local Python development with PostgreSQL
+2. Docker Compose
+
+For a containerized setup, follow the Docker Compose instructions below.
+
 ### 1. Clone the Repository
 
 ```bash
@@ -149,6 +195,8 @@ cd incidentflow
 
 ### 2. Create a Python Virtual Environment
 
+For local Python development:
+
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
@@ -156,13 +204,17 @@ source .venv/bin/activate
 
 ### 3. Install Dependencies
 
-Install the Python packages required for the API and tests:
+Install the application dependencies:
 
 ```bash
-python -m pip install fastapi uvicorn sqlalchemy psycopg[binary] pydantic-settings alembic pytest httpx
+python -m pip install -r requirements.txt
 ```
 
-A dedicated dependency lock or requirements file can be added in a future milestone.
+For automated testing, also install:
+
+```bash
+python -m pip install -r requirements-dev.txt
+```
 
 ### 4. Configure PostgreSQL
 
@@ -170,7 +222,7 @@ Install and start PostgreSQL using the instructions for your operating system.
 
 Create a PostgreSQL role and database with suitable permissions.
 
-The development environment uses these database names:
+The local development environment uses these database names:
 
 ```text
 incidentflow
@@ -195,7 +247,7 @@ DATABASE_URL=postgresql+psycopg://incidentflow_user:YOUR_PASSWORD@127.0.0.1:5432
 
 Replace the placeholder password and port with the values configured on your system.
 
-The local development environment for this project uses PostgreSQL on port `5433`, but other installations may use `5432`.
+The existing local development environment has used PostgreSQL on port `5433`, but other installations may use `5432`.
 
 Never commit `.env` or database credentials to GitHub.
 
@@ -219,7 +271,7 @@ The initial migration creates the `incidents` table.
 python -m uvicorn api:app --reload
 ```
 
-The API is available at:
+The locally started API is available at:
 
 ```text
 http://127.0.0.1:8000
@@ -231,6 +283,195 @@ Interactive API documentation:
 http://127.0.0.1:8000/docs
 ```
 
+## Running IncidentFlow with Docker Compose
+
+IncidentFlow supports containerized local development using Docker Compose.
+
+The Docker environment runs FastAPI and PostgreSQL in separate containers.
+
+### Prerequisites
+
+- Docker Engine or Docker Desktop
+- Docker Compose
+
+Verify installation:
+
+```bash
+docker --version
+docker compose version
+```
+
+### Configure the Database Password
+
+Set a strong password for the Docker PostgreSQL database:
+
+```bash
+export INCIDENTFLOW_DOCKER_DB_PASSWORD='REPLACE_WITH_YOUR_SECURE_PASSWORD'
+```
+
+Replace the placeholder with a secure password.
+
+For an existing PostgreSQL database volume, reuse the original database password. Changing the environment variable does not automatically change the password stored in an initialized PostgreSQL database.
+
+Do not commit credentials to Git.
+
+The environment variable must be available whenever Docker Compose processes this configuration.
+
+### Start the Application
+
+```bash
+docker compose up -d --build
+```
+
+Docker Compose:
+
+1. Builds the FastAPI application image.
+2. Starts the PostgreSQL container.
+3. Waits for PostgreSQL to become healthy.
+4. Starts the FastAPI container.
+5. Applies Alembic database migrations.
+6. Starts the Uvicorn application server.
+
+### Verify Container Status
+
+```bash
+docker compose ps
+```
+
+Expected services:
+
+```text
+incidentflow-api-1
+incidentflow-db-1
+```
+
+The database should report a healthy status.
+
+### Test the API
+
+Run:
+
+```bash
+curl http://127.0.0.1:8001/health
+```
+
+Expected response:
+
+```json
+{"status":"healthy"}
+```
+
+Retrieve incidents:
+
+```bash
+curl http://127.0.0.1:8001/incidents
+```
+
+Interactive API documentation:
+
+```text
+http://127.0.0.1:8001/docs
+```
+
+### Persistent Database Storage
+
+PostgreSQL uses a named Docker volume to preserve incident records across normal container restarts.
+
+The Compose configuration defines:
+
+```yaml
+volumes:
+  postgres_data:
+```
+
+For the default project name, the Docker volume is named:
+
+```text
+incidentflow_postgres_data
+```
+
+The PostgreSQL 18 container mounts this volume at:
+
+```text
+/var/lib/postgresql
+```
+
+### Verified Docker Persistence Test
+
+The Docker environment was successfully tested on November 23, 2026.
+
+The test involved:
+
+1. Starting the FastAPI and PostgreSQL containers.
+2. Confirming PostgreSQL was healthy.
+3. Confirming the API health endpoint returned HTTP 200.
+4. Creating a simulated Critical incident.
+5. Retrieving the incident through the REST API.
+6. Restarting both containers.
+7. Retrieving the same incident after the restart.
+
+The test incident was:
+
+```text
+ID: INC-001
+Title: AI training workload failure
+Severity: Critical
+Status: Open
+```
+
+The incident remained available after both containers restarted.
+
+This confirms data persistence across normal container restarts. It does not replace database backups or disaster recovery testing.
+
+### Restart Containers
+
+```bash
+docker compose restart
+```
+
+### Stop Containers
+
+```bash
+docker compose stop
+```
+
+This stops the services without deleting the containers or persistent database volume.
+
+### View Logs
+
+```bash
+docker compose logs --tail 50 api
+```
+
+Database logs:
+
+```bash
+docker compose logs --tail 50 db
+```
+
+### Important Data Protection Warning
+
+Avoid running:
+
+```bash
+docker compose down -v
+```
+
+unless you intentionally want to remove the project's database volume and its stored data.
+
+Removing the database volume can permanently delete locally stored incident records.
+
+### Docker Security Notes
+
+- The API is bound to `127.0.0.1:8001` for local development.
+- PostgreSQL is not published directly to the host.
+- The API container runs as a non-root user.
+- Local secrets and backups are excluded from the Docker build context.
+- Database credentials must not be committed to Git.
+- Authentication, authorization, and production security hardening remain future improvements.
+
+The current Docker environment is intended for local development and demonstration, not unrestricted public deployment.
+
 ## REST API Endpoints
 
 | Method | Endpoint | Description |
@@ -241,6 +482,10 @@ http://127.0.0.1:8000/docs
 | POST | `/incidents` | Create an incident |
 | GET | `/incidents/{incident_id}` | Retrieve an incident |
 | PATCH | `/incidents/{incident_id}` | Update incident status |
+
+The examples below use the local Python development port `8000`.
+
+When using Docker Compose, replace port `8000` with `8001`.
 
 ### Health Check
 
@@ -328,9 +573,11 @@ python migrate_json_to_postgres.py
 
 The migration utility checks existing incident identifiers and skips records that have already been imported.
 
-During the PostgreSQL integration milestone, five existing incidents were successfully migrated from JSON into PostgreSQL.
+During the original PostgreSQL integration milestone, five existing incidents were successfully migrated from JSON into PostgreSQL.
 
 The original local JSON data is excluded from Git.
+
+The Docker database is separate from the original local PostgreSQL database. Existing local records are not automatically imported into the Docker database.
 
 ## Automated Testing
 
@@ -342,7 +589,7 @@ Run all tests:
 python -m pytest -v
 ```
 
-The current suite contains 17 tests:
+The last documented test suite contained 17 passing tests:
 
 - 10 PostgreSQL-backed REST API tests
 - 7 command-line application tests
@@ -379,7 +626,7 @@ The CLI test suite covers:
 
 ## Database Migrations
 
-Alembic is used to manage schema changes.
+Alembic is used to manage database schema changes.
 
 Apply migrations:
 
@@ -401,6 +648,8 @@ be0361b30eca
 
 Future database schema changes should be implemented through Alembic migrations.
 
+In the Docker Compose environment, Alembic migrations run automatically when the API container starts.
+
 ## Security and Data Protection
 
 The repository excludes:
@@ -413,7 +662,11 @@ The repository excludes:
 - Python cache files
 - Editor swap files
 
-The API currently focuses on incident management functionality and local development. Authentication, authorization, audit logging, and production deployment hardening are future improvements.
+The Docker build context also excludes local data, secrets, backups, and unnecessary development files.
+
+The API currently focuses on incident management functionality and local development.
+
+Authentication, authorization, audit logging, and production deployment hardening are future improvements.
 
 Do not expose the development API publicly without appropriate security controls.
 
@@ -426,10 +679,11 @@ Do not expose the development API publicly without appropriate security controls
 - Pagination and additional filters
 - Structured application logging
 - Prometheus metrics and alerting
-- Containerized deployment
+- Production container deployment and hardening
 - Automated database migration checks in CI/CD
 - Improved test database cleanup
 - Kubernetes deployment and operational runbooks
+- Automated database backup and recovery testing
 
 ## Why I Built IncidentFlow
 
@@ -437,7 +691,9 @@ IncidentFlow is a portfolio project focused on infrastructure reliability, incid
 
 It demonstrates how incident records can be created, tracked, updated, validated, stored persistently, and tested.
 
-The project reflects real-world operational workflows involving production troubleshooting, incident ownership, and reliable service delivery.
+The project also demonstrates containerized service deployment, PostgreSQL integration, database migrations, application health checks, and persistence verification.
+
+It reflects real-world operational workflows involving production troubleshooting, incident ownership, and reliable service delivery.
 
 ## Author
 

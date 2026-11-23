@@ -1,0 +1,36 @@
+
+services:
+  db:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: incidentflow_docker
+      POSTGRES_USER: incidentflow_docker
+      POSTGRES_PASSWORD: ${INCIDENTFLOW_DOCKER_DB_PASSWORD:?Set INCIDENTFLOW_DOCKER_DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U incidentflow_docker -d incidentflow_docker
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8001:8000"
+    environment:
+      DATABASE_URL: postgresql+psycopg://incidentflow_docker:${INCIDENTFLOW_DOCKER_DB_PASSWORD:?Set INCIDENTFLOW_DOCKER_DB_PASSWORD}@db:5432/incidentflow_docker
+    depends_on:
+      db:
+        condition: service_healthy
+    command:
+      - sh
+      - -c
+      - python -m alembic upgrade head && exec uvicorn api:app --host 0.0.0.0 --port 8000
+
+volumes:
+  postgres_data:
