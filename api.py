@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from typing import Literal, Optional
 
 from fastapi import Depends, FastAPI, HTTPException
+from prometheus_fastapi_instrumentator import Instrumentator
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
@@ -14,9 +15,13 @@ from models import Incident
 app = FastAPI(
     title="IncidentFlow API",
     description="Enterprise Incident Management REST API",
-    version="1.2.0",
+    version="1.3.0",
 )
 
+
+
+# Expose HTTP metrics for Prometheus monitoring.
+Instrumentator().instrument(app).expose(app)
 
 Severity = Literal["Low", "Medium", "High", "Critical"]
 Status = Literal["Open", "Investigating", "Resolved", "Closed"]
@@ -89,7 +94,7 @@ def home():
     return {
         "application": "IncidentFlow",
         "message": "IncidentFlow API is running",
-        "version": "1.2.0",
+        "version": "1.3.0",
     }
 
 

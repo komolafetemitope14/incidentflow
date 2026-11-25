@@ -1,4 +1,3 @@
-
 # IncidentFlow
 
 A Python-based incident management application for tracking operational incidents, managing severity and status, and supporting reliable incident response workflows.
@@ -9,9 +8,9 @@ The application also supports local containerized deployment using Docker and Do
 
 ## Project Status
 
-**Current API version:** 1.2.0
+**Current API version:** 1.3.0
 
-**Automated tests:** 17 passing (last documented test run)
+**Automated tests:** 18 passing (last documented test run)
 
 **Database:** PostgreSQL 18
 
@@ -39,6 +38,9 @@ The application also supports local containerized deployment using Docker and Do
 - Database health checks and startup dependencies
 - Automatic database migrations during container startup
 - Verified incident persistence across container restarts
+- GitHub Actions automated tests and Docker image build
+- Prometheus metrics and Grafana dashboard
+- Operational runbook
 
 ## Technology Stack
 
@@ -54,6 +56,9 @@ The application also supports local containerized deployment using Docker and Do
 - Docker
 - Docker Compose
 - Git and GitHub
+- GitHub Actions
+- Prometheus
+- Grafana
 
 ## Architecture
 
@@ -88,7 +93,7 @@ Alembic manages database schema changes.
 
 ### Docker Architecture
 
-The Docker Compose environment contains two services:
+The Docker Compose environment contains four services: FastAPI, PostgreSQL, Prometheus, and Grafana.
 
 **API service**
 
@@ -105,6 +110,16 @@ The Docker Compose environment contains two services:
 - Includes a database readiness health check
 - Communicates with the API over the Docker Compose network
 - Does not publish its database port to the host
+
+**Prometheus service**
+
+- Scrapes FastAPI metrics every 15 seconds
+- Exposes its local interface on `127.0.0.1:9090`
+
+**Grafana service**
+
+- Uses a provisioned Prometheus data source and dashboard
+- Exposes its local interface on `127.0.0.1:3001`
 
 The API waits for the PostgreSQL health check to succeed before starting.
 
@@ -129,7 +144,14 @@ incidentflow/
 ├── tests/
 │   ├── test_api.py
 │   └── test_main.py
+├── docs/
+│   └── RUNBOOK.md
+├── monitoring/
+│   ├── prometheus/
+│   └── grafana/
 └── .github/
+    └── workflows/
+        └── ci.yml
 ```
 
 Local configuration files, incident data, backups, and virtual environments are excluded from Git where appropriate.
@@ -287,7 +309,7 @@ http://127.0.0.1:8000/docs
 
 IncidentFlow supports containerized local development using Docker Compose.
 
-The Docker environment runs FastAPI and PostgreSQL in separate containers.
+The Docker environment runs FastAPI, PostgreSQL, Prometheus, and Grafana in separate containers.
 
 ### Prerequisites
 
@@ -301,21 +323,22 @@ docker --version
 docker compose version
 ```
 
-### Configure the Database Password
+### Configure Service Passwords
 
-Set a strong password for the Docker PostgreSQL database:
+Set strong passwords for PostgreSQL and Grafana:
 
 ```bash
 export INCIDENTFLOW_DOCKER_DB_PASSWORD='REPLACE_WITH_YOUR_SECURE_PASSWORD'
+export INCIDENTFLOW_GRAFANA_ADMIN_PASSWORD='REPLACE_WITH_YOUR_GRAFANA_PASSWORD'
 ```
 
-Replace the placeholder with a secure password.
+Replace both placeholders with secure passwords. Reuse existing Grafana credentials when using an initialized Grafana volume.
 
 For an existing PostgreSQL database volume, reuse the original database password. Changing the environment variable does not automatically change the password stored in an initialized PostgreSQL database.
 
 Do not commit credentials to Git.
 
-The environment variable must be available whenever Docker Compose processes this configuration.
+Both environment variables must be available whenever Docker Compose processes this configuration.
 
 ### Start the Application
 
@@ -332,6 +355,8 @@ Docker Compose:
 5. Applies Alembic database migrations.
 6. Starts the Uvicorn application server.
 
+Docker Compose also starts Prometheus and Grafana for monitoring.
+
 ### Verify Container Status
 
 ```bash
@@ -343,6 +368,8 @@ Expected services:
 ```text
 incidentflow-api-1
 incidentflow-db-1
+incidentflow-prometheus-1
+incidentflow-grafana-1
 ```
 
 The database should report a healthy status.
@@ -478,6 +505,7 @@ The current Docker environment is intended for local development and demonstrati
 |---|---|---|
 | GET | `/` | Application information |
 | GET | `/health` | Database health check |
+| GET | `/metrics` | Prometheus metrics |
 | GET | `/incidents` | List incidents |
 | POST | `/incidents` | Create an incident |
 | GET | `/incidents/{incident_id}` | Retrieve an incident |
@@ -589,9 +617,9 @@ Run all tests:
 python -m pytest -v
 ```
 
-The last documented test suite contained 17 passing tests:
+The last documented test suite contained 18 passing tests:
 
-- 10 PostgreSQL-backed REST API tests
+- 11 API tests using the dedicated PostgreSQL test database
 - 7 command-line application tests
 
 The API tests use a separate PostgreSQL database named `incidentflow_test`.
@@ -612,6 +640,7 @@ The API test suite covers:
 - Missing incidents
 - Invalid severity validation
 - Invalid status validation
+- Prometheus metrics endpoint
 
 ### CLI Test Coverage
 
@@ -670,6 +699,49 @@ Authentication, authorization, audit logging, and production deployment hardenin
 
 Do not expose the development API publicly without appropriate security controls.
 
+## Monitoring and Observability
+
+IncidentFlow uses Prometheus and Grafana for monitoring.
+
+```mermaid
+flowchart TD
+    Client[API Client] --> API[FastAPI]
+    API --> DB[(PostgreSQL)]
+    Prometheus -->|Scrapes /metrics| API
+    Grafana -->|Queries metrics| Prometheus
+```
+
+| Service | Local endpoint |
+|---|---|
+| FastAPI | http://127.0.0.1:8001 |
+| Metrics | http://127.0.0.1:8001/metrics |
+| Prometheus | http://127.0.0.1:9090 |
+| Grafana | http://127.0.0.1:3001 |
+
+The provisioned IncidentFlow dashboard displays API availability, HTTP request rate, HTTP 5xx error rate, and average response time.
+
+Dashboard configuration: `monitoring/grafana/dashboards/incidentflow-overview.json`.
+
+In Prometheus, run:
+
+```promql
+up{job="incidentflow-api"}
+```
+
+A result of `1` indicates successful scraping.
+
+Set `INCIDENTFLOW_DOCKER_DB_PASSWORD` and `INCIDENTFLOW_GRAFANA_ADMIN_PASSWORD` before using Docker Compose. Reuse existing credentials and never commit secrets.
+
+## GitHub Actions Continuous Integration
+
+The workflow in `.github/workflows/ci.yml` runs on pushes and pull requests to `main` and supports manual dispatch. It installs dependencies, uses a dedicated PostgreSQL test database, runs automated tests, and verifies the Docker image build.
+
+CI validates changes; it does not deploy the application to a public server. The final v1.3.0 CI run and release are pending.
+
+## Operational Runbook
+
+See [docs/RUNBOOK.md](docs/RUNBOOK.md) for service health checks, logs, troubleshooting, and data protection.
+
 ## Future Improvements
 
 - Unified PostgreSQL storage for the CLI and REST API
@@ -678,11 +750,11 @@ Do not expose the development API publicly without appropriate security controls
 - Incident activity history and audit trails
 - Pagination and additional filters
 - Structured application logging
-- Prometheus metrics and alerting
+- Prometheus alerting and notification rules
 - Production container deployment and hardening
-- Automated database migration checks in CI/CD
+- Expanded database migration validation in CI/CD
 - Improved test database cleanup
-- Kubernetes deployment and operational runbooks
+- Kubernetes deployment and Kubernetes-specific runbooks
 - Automated database backup and recovery testing
 
 ## Why I Built IncidentFlow

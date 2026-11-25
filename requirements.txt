@@ -5,3 +5,4 @@ sqlalchemy>=2,<3
 psycopg[binary]>=3,<4
 pydantic-settings>=2,<3
 alembic>=1,<2
+prometheus-fastapi-instrumentator>=7,<8

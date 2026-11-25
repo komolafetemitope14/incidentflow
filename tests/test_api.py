@@ -176,3 +176,11 @@ def test_invalid_status(client):
 
     assert response.status_code == 422
 
+
+
+def test_prometheus_metrics(client):
+    response = client.get("/metrics")
+
+    assert response.status_code == 200
+    assert "text/plain" in response.headers["content-type"]
+    assert "http_requests_total" in response.text
