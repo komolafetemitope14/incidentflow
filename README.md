@@ -1,524 +1,167 @@
 # IncidentFlow
 
-A Python-based incident management application for tracking operational incidents, managing severity and status, and supporting reliable incident response workflows.
+![Version](https://img.shields.io/badge/Version-1.3.0-blue)
+![Python](https://img.shields.io/badge/Python-3.14-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18-4169E1?logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
+![Tests](https://img.shields.io/badge/Tests-18%20Passing-brightgreen)
+![CI](https://github.com/komolafetemitope14/incidentflow/actions/workflows/ci.yml/badge.svg)
 
-IncidentFlow includes a command-line application and a FastAPI REST API. The REST API uses PostgreSQL for persistent incident storage, SQLAlchemy for database access, and Alembic for schema migrations.
+## Project Overview
 
-The application also supports local containerized deployment using Docker and Docker Compose.
+IncidentFlow is a Python-based incident management application designed
+to support infrastructure operations, incident tracking, and service
+reliability workflows.
 
-## Project Status
+It provides a REST API and command-line interface for creating,
+classifying, tracking, and resolving operational incidents.
 
-**Current API version:** 1.3.0
+The application integrates persistent database storage, containerized
+deployment, automated testing, continuous integration, and application
+monitoring.
 
-**Automated tests:** 18 passing (last documented test run)
+## System Architecture
 
-**Database:** PostgreSQL 18
+![IncidentFlow System Architecture](docs/images/incidentflow-architecture.png)
 
-**Docker deployment:** Successfully tested locally
+The application uses a containerized architecture orchestrated by
+Docker Compose.
 
-### Implemented Features
+- **FastAPI:** Handles incident management and REST API requests.
+- **PostgreSQL:** Provides persistent incident storage.
+- **Prometheus:** Collects application performance metrics.
+- **Grafana:** Visualizes application health and performance.
+- **GitHub Actions:** Automates testing and Docker image validation.
 
-- Incident creation and tracking
-- Incident severity classification
-- Incident status updates
-- Incident listing and filtering
-- REST API with FastAPI
-- Request validation using Pydantic
-- PostgreSQL persistence for the REST API
-- SQLAlchemy ORM integration
-- Alembic database migrations
-- JSON-to-PostgreSQL migration utility
-- Incident timestamps
-- Database connectivity health checks
-- Automated testing with pytest
-- Separate PostgreSQL test database
-- Dockerized FastAPI application
-- PostgreSQL container with persistent storage
-- Docker Compose service orchestration
-- Database health checks and startup dependencies
-- Automatic database migrations during container startup
-- Verified incident persistence across container restarts
-- GitHub Actions automated tests and Docker image build
-- Prometheus metrics and Grafana dashboard
-- Operational runbook
+## Key Features
+
+- Incident creation, tracking, and resolution.
+- Severity classification and status management.
+- REST API with interactive Swagger documentation.
+- PostgreSQL persistence and database migrations.
+- Database connectivity and application health checks.
+- Docker-based service orchestration.
+- Automated testing and continuous integration.
+- Application monitoring and observability.
+- Operational troubleshooting and recovery documentation.
 
 ## Technology Stack
 
-- Python
-- FastAPI
-- Pydantic
-- PostgreSQL 18
-- SQLAlchemy
-- Alembic
-- psycopg
-- pytest
-- Uvicorn
-- Docker
-- Docker Compose
-- Git and GitHub
-- GitHub Actions
-- Prometheus
-- Grafana
-
-## Architecture
-
-The project currently supports two application interfaces.
-
-### Command-Line Interface
-
-The command-line application is implemented in `main.py`.
-
-It uses a local JSON file for incident persistence.
-
-### REST API
-
-The REST API is implemented in `api.py`.
-
-It uses PostgreSQL for incident persistence through SQLAlchemy.
-
-The CLI and REST API currently use separate storage backends. Incidents created through the CLI do not automatically appear in the PostgreSQL API.
-
-### Database Layer
-
-`database.py` manages:
-
-- Database configuration
-- SQLAlchemy engine creation
-- Database sessions
-- Database dependency injection
-
-`models.py` defines the SQLAlchemy incident model.
-
-Alembic manages database schema changes.
-
-### Docker Architecture
-
-The Docker Compose environment contains four services: FastAPI, PostgreSQL, Prometheus, and Grafana.
-
-**API service**
-
-- Runs the FastAPI application
-- Uses a Python 3.14 slim base image
-- Runs as a non-root user
-- Exposes the application on `127.0.0.1:8001`
-- Applies Alembic migrations during startup
-
-**Database service**
-
-- Runs PostgreSQL 18
-- Uses a persistent Docker volume
-- Includes a database readiness health check
-- Communicates with the API over the Docker Compose network
-- Does not publish its database port to the host
-
-**Prometheus service**
-
-- Scrapes FastAPI metrics every 15 seconds
-- Exposes its local interface on `127.0.0.1:9090`
-
-**Grafana service**
-
-- Uses a provisioned Prometheus data source and dashboard
-- Exposes its local interface on `127.0.0.1:3001`
-
-The API waits for the PostgreSQL health check to succeed before starting.
-
-## Project Structure
-
-```text
-incidentflow/
-├── .dockerignore
-├── .gitignore
-├── README.md
-├── Dockerfile
-├── compose.yaml
-├── requirements.txt
-├── requirements-dev.txt
-├── api.py
-├── main.py
-├── database.py
-├── models.py
-├── migrate_json_to_postgres.py
-├── alembic.ini
-├── migrations/
-├── tests/
-│   ├── test_api.py
-│   └── test_main.py
-├── docs/
-│   └── RUNBOOK.md
-├── monitoring/
-│   ├── prometheus/
-│   └── grafana/
-└── .github/
-    └── workflows/
-        └── ci.yml
-```
-
-Local configuration files, incident data, backups, and virtual environments are excluded from Git where appropriate.
-
-## Incident Data Model
-
-Each incident includes the following fields:
-
-| Field | Description |
+| Component | Technology |
 |---|---|
-| id | Unique incident identifier |
-| title | Incident title |
-| description | Detailed incident description |
-| severity | Low, Medium, High, or Critical |
-| status | Open, Investigating, Resolved, or Closed |
-| created_at | Incident creation timestamp |
-| updated_at | Most recent status update timestamp |
-| resolved_at | Timestamp when the incident was resolved |
+| Programming Language | Python |
+| Backend Framework | FastAPI |
+| Data Validation | Pydantic |
+| Database | PostgreSQL 18 |
+| Database ORM | SQLAlchemy |
+| Database Migrations | Alembic |
+| Application Server | Uvicorn |
+| Containerization | Docker |
+| Service Orchestration | Docker Compose |
+| Automated Testing | pytest |
+| Continuous Integration | GitHub Actions |
+| Metrics Collection | Prometheus |
+| Visualization | Grafana |
+| Version Control | Git and GitHub |
 
-Incident identifiers use the format:
+## Incident Management Workflow
 
-```text
-INC-001
-INC-002
-INC-003
+```mermaid
+flowchart LR
+    A[Incident Detected] --> B[Create Incident]
+    B --> C[Classify Severity]
+    C --> D[Investigating]
+    D --> E[Resolved]
+    E --> F[Closed]
 ```
 
-New incidents created through the REST API receive an identifier generated from existing database records.
+### Severity Levels
 
-## Incident Severity Levels
+| Severity | Description |
+|---|---|
+| Low | Minor operational issue |
+| Medium | Limited service disruption |
+| High | Significant operational impact |
+| Critical | Major service or infrastructure failure |
 
-- Low
-- Medium
-- High
-- Critical
+### Incident Statuses
 
-## Incident Statuses
+`Open` → `Investigating` → `Resolved` → `Closed`
 
-- Open
-- Investigating
-- Resolved
-- Closed
-
-New incidents start with the status `Open`.
-
-When an incident is marked `Resolved`, the API records its resolution timestamp.
+New incidents are created with an Open status. Resolution timestamps
+are recorded when incidents are marked as Resolved.
 
 ## Getting Started
 
-There are two ways to run IncidentFlow:
+### Step 1: Prerequisites
 
-1. Local Python development with PostgreSQL
-2. Docker Compose
+Ensure the following tools are installed:
 
-For a containerized setup, follow the Docker Compose instructions below.
+- Git
+- Docker
+- Docker Compose
 
-### 1. Clone the Repository
+Verify the installation:
+
+```bash
+git --version
+docker --version
+docker compose version
+```
+
+### Step 2: Clone the Repository
 
 ```bash
 git clone https://github.com/komolafetemitope14/incidentflow.git
 cd incidentflow
 ```
 
-### 2. Create a Python Virtual Environment
+### Step 3: Configure Environment Variables
 
-For local Python development:
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-```
-
-### 3. Install Dependencies
-
-Install the application dependencies:
+Set the PostgreSQL and Grafana passwords:
 
 ```bash
-python -m pip install -r requirements.txt
+read -rsp "PostgreSQL password: " INCIDENTFLOW_DOCKER_DB_PASSWORD
+echo
+export INCIDENTFLOW_DOCKER_DB_PASSWORD
+
+read -rsp "Grafana password: " INCIDENTFLOW_GRAFANA_ADMIN_PASSWORD
+echo
+export INCIDENTFLOW_GRAFANA_ADMIN_PASSWORD
 ```
 
-For automated testing, also install:
+Use strong passwords for a new installation. When using existing
+Docker volumes, reuse the original credentials.
 
-```bash
-python -m pip install -r requirements-dev.txt
-```
+Never commit passwords or environment files to Git.
 
-### 4. Configure PostgreSQL
-
-Install and start PostgreSQL using the instructions for your operating system.
-
-Create a PostgreSQL role and database with suitable permissions.
-
-The local development environment uses these database names:
-
-```text
-incidentflow
-incidentflow_test
-```
-
-The test database must be separate from the main application database.
-
-### 5. Configure Environment Variables
-
-Create a `.env` file in the project root:
-
-```bash
-vi .env
-```
-
-Example configuration:
-
-```dotenv
-DATABASE_URL=postgresql+psycopg://incidentflow_user:YOUR_PASSWORD@127.0.0.1:5432/incidentflow
-```
-
-Replace the placeholder password and port with the values configured on your system.
-
-The existing local development environment has used PostgreSQL on port `5433`, but other installations may use `5432`.
-
-Never commit `.env` or database credentials to GitHub.
-
-### 6. Apply Database Migrations
-
-```bash
-python -m alembic upgrade head
-```
-
-Check the current migration:
-
-```bash
-python -m alembic current
-```
-
-The initial migration creates the `incidents` table.
-
-### 7. Start the REST API
-
-```bash
-python -m uvicorn api:app --reload
-```
-
-The locally started API is available at:
-
-```text
-http://127.0.0.1:8000
-```
-
-Interactive API documentation:
-
-```text
-http://127.0.0.1:8000/docs
-```
-
-## Running IncidentFlow with Docker Compose
-
-IncidentFlow supports containerized local development using Docker Compose.
-
-The Docker environment runs FastAPI, PostgreSQL, Prometheus, and Grafana in separate containers.
-
-### Prerequisites
-
-- Docker Engine or Docker Desktop
-- Docker Compose
-
-Verify installation:
-
-```bash
-docker --version
-docker compose version
-```
-
-### Configure Service Passwords
-
-Set strong passwords for PostgreSQL and Grafana:
-
-```bash
-export INCIDENTFLOW_DOCKER_DB_PASSWORD='REPLACE_WITH_YOUR_SECURE_PASSWORD'
-export INCIDENTFLOW_GRAFANA_ADMIN_PASSWORD='REPLACE_WITH_YOUR_GRAFANA_PASSWORD'
-```
-
-Replace both placeholders with secure passwords. Reuse existing Grafana credentials when using an initialized Grafana volume.
-
-For an existing PostgreSQL database volume, reuse the original database password. Changing the environment variable does not automatically change the password stored in an initialized PostgreSQL database.
-
-Do not commit credentials to Git.
-
-Both environment variables must be available whenever Docker Compose processes this configuration.
-
-### Start the Application
+### Step 4: Deploy the Application
 
 ```bash
 docker compose up -d --build
 ```
 
-Docker Compose:
+Docker Compose builds the application image, initializes the database,
+applies database migrations, and starts the monitoring services.
 
-1. Builds the FastAPI application image.
-2. Starts the PostgreSQL container.
-3. Waits for PostgreSQL to become healthy.
-4. Starts the FastAPI container.
-5. Applies Alembic database migrations.
-6. Starts the Uvicorn application server.
-
-Docker Compose also starts Prometheus and Grafana for monitoring.
-
-### Verify Container Status
+### Step 5: Verify the Deployment
 
 ```bash
 docker compose ps
 ```
 
-Expected services:
+The following services should be running:
 
-```text
-incidentflow-api-1
-incidentflow-db-1
-incidentflow-prometheus-1
-incidentflow-grafana-1
-```
+- incidentflow-api-1
+- incidentflow-db-1
+- incidentflow-prometheus-1
+- incidentflow-grafana-1
 
-The database should report a healthy status.
-
-### Test the API
-
-Run:
+Verify API health:
 
 ```bash
 curl http://127.0.0.1:8001/health
-```
-
-Expected response:
-
-```json
-{"status":"healthy"}
-```
-
-Retrieve incidents:
-
-```bash
-curl http://127.0.0.1:8001/incidents
-```
-
-Interactive API documentation:
-
-```text
-http://127.0.0.1:8001/docs
-```
-
-### Persistent Database Storage
-
-PostgreSQL uses a named Docker volume to preserve incident records across normal container restarts.
-
-The Compose configuration defines:
-
-```yaml
-volumes:
-  postgres_data:
-```
-
-For the default project name, the Docker volume is named:
-
-```text
-incidentflow_postgres_data
-```
-
-The PostgreSQL 18 container mounts this volume at:
-
-```text
-/var/lib/postgresql
-```
-
-### Verified Docker Persistence Test
-
-The Docker environment was successfully tested on November 23, 2026.
-
-The test involved:
-
-1. Starting the FastAPI and PostgreSQL containers.
-2. Confirming PostgreSQL was healthy.
-3. Confirming the API health endpoint returned HTTP 200.
-4. Creating a simulated Critical incident.
-5. Retrieving the incident through the REST API.
-6. Restarting both containers.
-7. Retrieving the same incident after the restart.
-
-The test incident was:
-
-```text
-ID: INC-001
-Title: AI training workload failure
-Severity: Critical
-Status: Open
-```
-
-The incident remained available after both containers restarted.
-
-This confirms data persistence across normal container restarts. It does not replace database backups or disaster recovery testing.
-
-### Restart Containers
-
-```bash
-docker compose restart
-```
-
-### Stop Containers
-
-```bash
-docker compose stop
-```
-
-This stops the services without deleting the containers or persistent database volume.
-
-### View Logs
-
-```bash
-docker compose logs --tail 50 api
-```
-
-Database logs:
-
-```bash
-docker compose logs --tail 50 db
-```
-
-### Important Data Protection Warning
-
-Avoid running:
-
-```bash
-docker compose down -v
-```
-
-unless you intentionally want to remove the project's database volume and its stored data.
-
-Removing the database volume can permanently delete locally stored incident records.
-
-### Docker Security Notes
-
-- The API is bound to `127.0.0.1:8001` for local development.
-- PostgreSQL is not published directly to the host.
-- The API container runs as a non-root user.
-- Local secrets and backups are excluded from the Docker build context.
-- Database credentials must not be committed to Git.
-- Authentication, authorization, and production security hardening remain future improvements.
-
-The current Docker environment is intended for local development and demonstration, not unrestricted public deployment.
-
-## REST API Endpoints
-
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/` | Application information |
-| GET | `/health` | Database health check |
-| GET | `/metrics` | Prometheus metrics |
-| GET | `/incidents` | List incidents |
-| POST | `/incidents` | Create an incident |
-| GET | `/incidents/{incident_id}` | Retrieve an incident |
-| PATCH | `/incidents/{incident_id}` | Update incident status |
-
-The examples below use the local Python development port `8000`.
-
-When using Docker Compose, replace port `8000` with `8001`.
-
-### Health Check
-
-```bash
-curl http://127.0.0.1:8000/health
 ```
 
 Expected response:
@@ -529,254 +172,263 @@ Expected response:
 }
 ```
 
-The health endpoint checks database connectivity and returns HTTP 503 if the database is unavailable.
+### Step 6: Access the Services
 
-### List Incidents
+| Service | URL |
+|---|---|
+| FastAPI | http://127.0.0.1:8001 |
+| Swagger UI | http://127.0.0.1:8001/docs |
+| Health Check | http://127.0.0.1:8001/health |
+| Prometheus Metrics | http://127.0.0.1:8001/metrics |
+| Prometheus | http://127.0.0.1:9090 |
+| Grafana | http://127.0.0.1:3001 |
 
-```bash
-curl http://127.0.0.1:8000/incidents
-```
+## REST API
 
-### Filter Incidents by Severity
-
-```bash
-curl "http://127.0.0.1:8000/incidents?severity=Critical"
-```
-
-### Filter Incidents by Status
-
-```bash
-curl "http://127.0.0.1:8000/incidents?status=Open"
-```
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/` | Application information |
+| GET | `/health` | Database connectivity check |
+| GET | `/metrics` | Prometheus application metrics |
+| GET | `/incidents` | List incidents |
+| POST | `/incidents` | Create an incident |
+| GET | `/incidents/{incident_id}` | Retrieve an incident |
+| PATCH | `/incidents/{incident_id}` | Update incident status |
 
 ### Create an Incident
 
 ```bash
-curl -X POST http://127.0.0.1:8000/incidents \
+curl -X POST http://127.0.0.1:8001/incidents \
   -H "Content-Type: application/json" \
   -d '{
-    "title": "AI training job failure",
-    "description": "Training workload stopped unexpectedly",
+    "title": "Infrastructure service failure",
+    "description": "Application service became unavailable",
     "severity": "Critical"
   }'
 ```
 
-Successful requests return HTTP 201 and the newly created incident.
-
-### Retrieve an Incident
+### Retrieve Incidents
 
 ```bash
-curl http://127.0.0.1:8000/incidents/INC-001
+curl http://127.0.0.1:8001/incidents
 ```
 
-### Update an Incident
+### Filter Incidents
 
 ```bash
-curl -X PATCH http://127.0.0.1:8000/incidents/INC-001 \
+curl "http://127.0.0.1:8001/incidents?severity=Critical"
+```
+
+### Update Incident Status
+
+```bash
+curl -X PATCH http://127.0.0.1:8001/incidents/INC-001 \
   -H "Content-Type: application/json" \
-  -d '{
-    "status": "Investigating"
-  }'
+  -d '{"status": "Investigating"}'
 ```
 
-### Resolve an Incident
-
-```bash
-curl -X PATCH http://127.0.0.1:8000/incidents/INC-001 \
-  -H "Content-Type: application/json" \
-  -d '{
-    "status": "Resolved"
-  }'
-```
-
-## JSON-to-PostgreSQL Migration
-
-The project includes `migrate_json_to_postgres.py` to import existing incidents from local JSON storage into PostgreSQL.
-
-Run:
-
-```bash
-python migrate_json_to_postgres.py
-```
-
-The migration utility checks existing incident identifiers and skips records that have already been imported.
-
-During the original PostgreSQL integration milestone, five existing incidents were successfully migrated from JSON into PostgreSQL.
-
-The original local JSON data is excluded from Git.
-
-The Docker database is separate from the original local PostgreSQL database. Existing local records are not automatically imported into the Docker database.
-
-## Automated Testing
-
-IncidentFlow uses pytest.
-
-Run all tests:
-
-```bash
-python -m pytest -v
-```
-
-The last documented test suite contained 18 passing tests:
-
-- 11 API tests using the dedicated PostgreSQL test database
-- 7 command-line application tests
-
-The API tests use a separate PostgreSQL database named `incidentflow_test`.
-
-**Warning:** The API test fixture deletes records from the test database. Never point the test configuration at a database containing important information.
-
-### API Test Coverage
-
-The API test suite covers:
-
-- Database health checks
-- Incident creation
-- Incident listing
-- Incident retrieval
-- Incident status updates
-- Incident resolution timestamps
-- Incident filtering
-- Missing incidents
-- Invalid severity validation
-- Invalid status validation
-- Prometheus metrics endpoint
-
-### CLI Test Coverage
-
-The CLI test suite covers:
-
-- Incident ID generation
-- Incident persistence
-- Incident creation
-- Severity validation
-- Status updates
-- Unknown incident handling
-
-## Database Migrations
-
-Alembic is used to manage database schema changes.
-
-Apply migrations:
-
-```bash
-python -m alembic upgrade head
-```
-
-Check the migration version:
-
-```bash
-python -m alembic current
-```
-
-The initial migration revision is:
-
-```text
-be0361b30eca
-```
-
-Future database schema changes should be implemented through Alembic migrations.
-
-In the Docker Compose environment, Alembic migrations run automatically when the API container starts.
-
-## Security and Data Protection
-
-The repository excludes:
-
-- Local database credentials
-- `.env` files
-- Local incident JSON files
-- Backup files
-- Python virtual environments
-- Python cache files
-- Editor swap files
-
-The Docker build context also excludes local data, secrets, backups, and unnecessary development files.
-
-The API currently focuses on incident management functionality and local development.
-
-Authentication, authorization, audit logging, and production deployment hardening are future improvements.
-
-Do not expose the development API publicly without appropriate security controls.
+Replace `INC-001` with the identifier of the incident you want to update.
 
 ## Monitoring and Observability
 
-IncidentFlow uses Prometheus and Grafana for monitoring.
+IncidentFlow integrates Prometheus and Grafana to provide visibility
+into application health, availability, and performance.
 
-```mermaid
-flowchart TD
-    Client[API Client] --> API[FastAPI]
-    API --> DB[(PostgreSQL)]
-    Prometheus -->|Scrapes /metrics| API
-    Grafana -->|Queries metrics| Prometheus
-```
+Prometheus collects FastAPI metrics every 15 seconds, while Grafana
+provides a preconfigured monitoring dashboard.
 
-| Service | Local endpoint |
+### Dashboard Metrics
+
+| Metric | Purpose |
 |---|---|
-| FastAPI | http://127.0.0.1:8001 |
-| Metrics | http://127.0.0.1:8001/metrics |
-| Prometheus | http://127.0.0.1:9090 |
-| Grafana | http://127.0.0.1:3001 |
+| API Availability | Monitor application scrape availability |
+| HTTP Request Rate | Measure incoming application traffic |
+| HTTP 5xx Error Rate | Identify server-side failures |
+| Average Response Time | Monitor application performance |
 
-The provisioned IncidentFlow dashboard displays API availability, HTTP request rate, HTTP 5xx error rate, and average response time.
-
-Dashboard configuration: `monitoring/grafana/dashboards/incidentflow-overview.json`.
-
-In Prometheus, run:
+Verify Prometheus connectivity using:
 
 ```promql
 up{job="incidentflow-api"}
 ```
 
-A result of `1` indicates successful scraping.
+A result of `1` indicates that Prometheus is successfully scraping
+the application.
 
-Set `INCIDENTFLOW_DOCKER_DB_PASSWORD` and `INCIDENTFLOW_GRAFANA_ADMIN_PASSWORD` before using Docker Compose. Reuse existing credentials and never commit secrets.
+The Grafana dashboard and Prometheus data source are automatically
+provisioned during container deployment.
 
-## GitHub Actions Continuous Integration
+## Local Development
 
-The workflow in `.github/workflows/ci.yml` runs on pushes and pull requests to `main` and supports manual dispatch. It installs dependencies, uses a dedicated PostgreSQL test database, runs automated tests, and verifies the Docker image build.
+For development without Docker, install Python and configure a
+PostgreSQL database.
 
-CI validates changes; it does not deploy the application to a public server. The final v1.3.0 CI run and release are pending.
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python -m pip install -r requirements-dev.txt
+```
 
-## Operational Runbook
+Create a `.env` file containing the database connection URL:
 
-See [docs/RUNBOOK.md](docs/RUNBOOK.md) for service health checks, logs, troubleshooting, and data protection.
+```dotenv
+DATABASE_URL=postgresql+psycopg://USER:PASSWORD@127.0.0.1:5432/incidentflow
+```
+
+Replace the username, password, and port with your PostgreSQL
+configuration.
+
+Apply database migrations and start the API:
+
+```bash
+python -m alembic upgrade head
+python -m uvicorn api:app --reload
+```
+
+The local development API is available at:
+
+http://127.0.0.1:8000/docs
+
+The command-line application uses local JSON storage independently
+of the REST API. A JSON-to-PostgreSQL migration utility is included
+for importing existing incident records.
+
+## Automated Testing
+
+IncidentFlow uses pytest to validate application functionality.
+
+| Test Suite | Tests Passed |
+|---|---:|
+| REST API | 11 |
+| Command-Line Application | 7 |
+| **Total** | **18** |
+
+Test coverage includes incident creation, retrieval, filtering,
+status updates, input validation, persistence, health checks,
+and the metrics endpoint.
+
+Before running tests, configure a dedicated PostgreSQL database
+named `incidentflow_test` with appropriate permissions.
+
+```bash
+python -m pytest -v
+```
+
+**Warning:** API test fixtures delete records from the test database.
+Never run tests against a database containing important data.
+
+## Continuous Integration
+
+GitHub Actions automates application validation whenever changes
+are pushed or pull requests are submitted to the main branch.
+
+```mermaid
+flowchart LR
+    A[Git Push] --> B[GitHub Actions]
+    B --> C[Install Dependencies]
+    C --> D[Run Automated Tests]
+    D --> E[Build Docker Image]
+    E --> F[Validation Complete]
+```
+
+The CI workflow uses an isolated PostgreSQL test database and
+validates the application Docker image.
+
+[View GitHub Actions workflows](https://github.com/komolafetemitope14/incidentflow/actions)
+
+The pipeline performs continuous integration, not public deployment.
+
+## Project Structure
+
+```text
+incidentflow/
+├── .github/
+│   └── workflows/
+│       └── ci.yml
+├── docs/
+│   ├── images/
+│   │   └── incidentflow-architecture.png
+│   └── RUNBOOK.md
+├── migrations/
+├── monitoring/
+│   ├── prometheus/
+│   └── grafana/
+├── tests/
+│   ├── test_api.py
+│   └── test_main.py
+├── api.py
+├── main.py
+├── database.py
+├── models.py
+├── migrate_json_to_postgres.py
+├── alembic.ini
+├── Dockerfile
+├── compose.yaml
+├── requirements.txt
+├── requirements-dev.txt
+└── README.md
+```
+
+## Operational Management
+
+| Operation | Command |
+|---|---|
+| Check service status | `docker compose ps` |
+| View API logs | `docker compose logs --tail 50 api` |
+| View database logs | `docker compose logs --tail 50 db` |
+| Restart services | `docker compose restart` |
+| Stop services | `docker compose stop` |
+| Rebuild services | `docker compose up -d --build` |
+
+PostgreSQL uses a persistent Docker volume to preserve incident
+records across normal container restarts.
+
+**Warning:** Removing Docker volumes can permanently delete
+stored incident records.
+
+For detailed troubleshooting and recovery procedures, see the
+[Operational Runbook](docs/RUNBOOK.md).
+
+## Security Considerations
+
+- The API container runs as a non-root user.
+- PostgreSQL is not directly exposed to the host network.
+- Application and monitoring interfaces are bound to localhost.
+- Credentials and local configuration files are excluded from Git.
+- Automated tests use a dedicated database.
+
+The current deployment is intended for local development and
+demonstration. Authentication, authorization, and additional
+security hardening are required before public production deployment.
+
+## Project Validation
+
+| Component | Last Documented Result |
+|---|---|
+| REST API | Passed |
+| PostgreSQL Integration | Passed |
+| Database Migrations | Passed |
+| Docker Deployment | Passed |
+| Persistent Incident Storage | Passed |
+| Automated Tests | 18 Passed |
+| Prometheus Metrics Collection | Verified |
+| Grafana Dashboard | Verified |
+| GitHub Actions Integration | Implemented |
+| Operational Runbook | Completed |
 
 ## Future Improvements
 
-- Unified PostgreSQL storage for the CLI and REST API
-- API authentication and role-based authorization
-- Incident ownership and assignment
-- Incident activity history and audit trails
-- Pagination and additional filters
-- Structured application logging
-- Prometheus alerting and notification rules
-- Production container deployment and hardening
-- Expanded database migration validation in CI/CD
-- Improved test database cleanup
-- Kubernetes deployment and Kubernetes-specific runbooks
-- Automated database backup and recovery testing
+- API authentication and role-based access control.
+- Incident ownership and audit logging.
+- Unified CLI and REST API database storage.
+- Prometheus alerting and incident notifications.
+- Kubernetes deployment.
+- Automated database backup and recovery testing.
+- Production deployment and security hardening.
 
-## Why I Built IncidentFlow
+## Project Version
 
-IncidentFlow is a portfolio project focused on infrastructure reliability, incident management, and practical Python backend engineering.
+**Current Version:** v1.3.0
 
-It demonstrates how incident records can be created, tracked, updated, validated, stored persistently, and tested.
-
-The project also demonstrates containerized service deployment, PostgreSQL integration, database migrations, application health checks, and persistence verification.
-
-It reflects real-world operational workflows involving production troubleshooting, incident ownership, and reliable service delivery.
-
-## Author
-
-**Komolafe Temitope Olumide**
-
-Infrastructure and Enterprise Support Engineer
-
-GitHub: https://github.com/komolafetemitope14
-
-Portfolio: https://komolafetemitope14.github.io/portfolio
-
-## License
-
-No license has been specified for this repository.
+[View Version Tag](https://github.com/komolafetemitope14/incidentflow/tree/v1.3.0)
